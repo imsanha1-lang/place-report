@@ -106,12 +106,26 @@ tr.mine td{background:var(--mine-green)!important;font-weight:700}
 .empty{padding:44px 24px;text-align:center;color:var(--muted)}
 .err{padding:30px;text-align:center;color:var(--red-d)}
 .foot{color:var(--faint);font-size:12px;margin-top:30px;text-align:center}
+/* 처음 화면: 매장 검색만 */
+.home{cursor:pointer}
+.land{max-width:640px;margin:9vh auto 0;text-align:center}
+.land h1{font-size:28px;margin:0 0 8px}
+.land p{color:var(--muted);margin:0 0 22px;font-size:14px}
+#q2{width:100%;height:56px;border:2px solid var(--line);border-radius:16px;padding:0 20px;font:inherit;font-size:18px;background:var(--card);color:var(--ink);outline:none}
+#q2:focus{border-color:var(--green);box-shadow:0 0 0 4px var(--green-soft)}
+.sugg{margin-top:12px;text-align:left}
+.sugg button{display:flex;align-items:center;gap:10px;width:100%;border:1px solid var(--line);background:var(--card);border-radius:12px;padding:12px 16px;margin-bottom:8px;font:inherit;font-size:15px;color:var(--ink);cursor:pointer;text-align:left;flex-wrap:wrap}
+.sugg button:hover,.sugg button.on{border-color:var(--green);background:var(--mine-bg)}
+.sugg b{font-weight:700}
+.sugg .rk{font-size:12px;color:var(--muted);margin-left:auto}
+.sugg .none{color:var(--muted);padding:14px;text-align:center}
+.land .meta{color:var(--faint);font-size:12px;margin-top:18px}
 </style>
 </head>
 <body>
 <header class="top"><div class="wrap">
-  <div class="logo">N</div>
-  <div class="brand"><b>플레이스 매일 분석</b><small id="updated"></small></div>
+  <div class="logo home" title="처음 화면">N</div>
+  <div class="brand home" title="처음 화면"><b>플레이스 매일 분석</b><small id="updated"></small></div>
   <div class="ctl"><input id="q" type="search" list="storelist" placeholder="매장명 검색" aria-label="매장명 검색" autocomplete="off"><datalist id="storelist"></datalist><select id="date" aria-label="날짜"></select></div>
 </div></header>
 <main class="wrap">
@@ -143,7 +157,7 @@ async function init() {
   if (!IDX.dates.length) { $('#view').innerHTML = '<div class="card empty">아직 기록이 없어요. 매일 12시 분석이 끝나면 여기에 나타나요.</div>'; return; }
   const h = readHash();
   st.date = IDX.dates.includes(h.date) ? h.date : IDX.dates[0];
-  st.store = IDX.stores.some(s => s.key === h.store) ? h.store : (IDX.stores[0] || {}).key;
+  st.store = IDX.stores.some(s => s.key === h.store) ? h.store : '';  // 처음엔 검색 화면
   st.kw = h.kw;
   $('#date').innerHTML = IDX.dates.map(d => `<option>${d}</option>`).join('');
   $('#date').onchange = e => { st.date = e.target.value; load(); };
@@ -156,6 +170,7 @@ async function init() {
   };
   $('#q').onchange = pick;
   $('#q').onkeydown = e => { if (e.key === 'Enter') pick(); };
+  document.querySelectorAll('.home').forEach(el => el.onclick = () => { st.store = ''; st.kw = ''; render(); });
   load();
 }
 async function load() {
@@ -166,10 +181,11 @@ async function load() {
 function render() {
   const stores = IDX.stores.filter(s => DAY && DAY.stores[s.key]);
   $('#storelist').innerHTML = stores.map(s => `<option value="${esc(s.name)}">`).join('');
-  if (!stores.some(s => s.key === st.store)) st.store = (stores[0] || {}).key;
+  if (!st.store) return landing(stores);
+  $('#q').style.visibility = '';
   $('#q').value = (stores.find(s => s.key === st.store) || {}).name || '';
   const sd = DAY && DAY.stores[st.store];
-  if (!sd) { $('#tabs').innerHTML = ''; $('#view').innerHTML = '<div class="card empty">이 날짜에는 기록이 없어요.</div>'; return; }
+  if (!sd) { $('#tabs').innerHTML = ''; $('#view').innerHTML = '<div class="card empty">이 날짜에는 이 매장의 기록이 없어요. 날짜를 바꾸거나 다른 매장을 검색해 주세요.</div>'; return; }
   const kws = Object.keys(sd.keywords);
   if (!kws.includes(st.kw)) st.kw = kws[0];
   $('#tabs').innerHTML = kws.map(k => {
@@ -193,6 +209,30 @@ function render() {
   html += secSummary(r) + secChart() + secMetrics(r) + (r.summary.has_mine ? secDiag(r) : '') + secChecks(r) + secFeatures(r) + secTable(r) + secChanges(x);
   $('#view').innerHTML = html;
   bindChart();
+}
+/* 처음 화면: 매장 검색 칸만 (입력하면 맞는 매장 목록) */
+function landing(stores) {
+  $('#tabs').innerHTML = ''; $('#q').value = ''; $('#q').style.visibility = 'hidden';  // 처음 화면엔 큰 검색칸만
+  history.replaceState(null, '', '#' + encodeURIComponent(st.date));
+  $('#view').innerHTML = `<div class="land"><h1>어느 매장을 볼까요?</h1><p>매장명 일부만 입력해도 돼요 (예: 수원정자, 개봉)</p>
+    <input id="q2" type="search" placeholder="매장명 검색" autocomplete="off"><div class="sugg" id="sugg"></div>
+    <div class="meta">${st.date} 기록 · 매장 ${stores.length}곳</div></div>`;
+  const norm = t => String(t || '').replace(/\s/g, '').toLowerCase();
+  let hits = [];
+  const show = () => {
+    const q = norm($('#q2').value);
+    if (!q) { $('#sugg').innerHTML = ''; hits = []; return; }
+    hits = stores.filter(s => norm(s.name).includes(q)).sort((a, b) => (norm(b.name) === q) - (norm(a.name) === q)).slice(0, 30);
+    $('#sugg').innerHTML = hits.length ? hits.map((s, i) => {
+      const kw = (DAY.stores[s.key] || {}).keywords || {};
+      const rk = Object.entries(kw).map(([k, x]) => `${esc(k)} ${!x.ok ? '실패' : x.my_rank ? x.my_rank + '위' : '밖'}`).join(' · ');
+      return `<button data-k="${esc(s.key)}" class="${i ? '' : 'on'}"><b>${esc(s.name)}</b><span class="rk">${rk}</span></button>`;
+    }).join('') : '<div class="none">찾는 매장이 없어요.</div>';
+    $('#sugg').querySelectorAll('button').forEach(b => b.onclick = () => { st.store = b.dataset.k; st.kw = ''; render(); window.scrollTo(0, 0); });
+  };
+  $('#q2').oninput = show;
+  $('#q2').onkeydown = e => { if (e.key === 'Enter' && hits[0]) { st.store = hits[0].key; st.kw = ''; render(); } };
+  $('#q2').focus();
 }
 function change(rank, prev, has) {
   if (!has) return ['', 'muted'];
