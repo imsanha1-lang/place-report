@@ -20,6 +20,8 @@ header.top .wrap{display:flex;align-items:center;gap:12px;padding-top:12px;paddi
 .logo{width:36px;height:36px;border-radius:10px;background:var(--green);color:#fff;font-weight:700;display:flex;align-items:center;justify-content:center;font-size:18px}
 .brand b{display:block;font-size:16px}.brand small{color:var(--muted);font-size:12px}
 .ctl{margin-left:auto;display:flex;gap:8px;flex-wrap:wrap}
+#q{height:38px;border:1px solid var(--line);border-radius:10px;padding:0 12px;font:inherit;font-size:14px;width:240px;max-width:100%;background:var(--card);color:var(--ink)}
+@media (max-width:600px){.ctl{width:100%;margin-left:0}#q{flex:1;width:auto}}
 select{height:38px;border:1px solid var(--line);border-radius:10px;background:var(--card);padding:0 10px;font:inherit;font-size:14px;font-weight:700;color:var(--ink);max-width:100%}
 .tabs{display:flex;gap:8px;flex-wrap:wrap;margin:18px 0 6px}
 .tab{border:1px solid var(--line);background:var(--card);border-radius:12px;padding:10px 14px;font:inherit;font-weight:700;font-size:14px;color:var(--ink);cursor:pointer}
@@ -110,7 +112,7 @@ tr.mine td{background:var(--mine-green)!important;font-weight:700}
 <header class="top"><div class="wrap">
   <div class="logo">N</div>
   <div class="brand"><b>플레이스 매일 분석</b><small id="updated"></small></div>
-  <div class="ctl"><select id="date" aria-label="날짜"></select><select id="store" aria-label="매장"></select></div>
+  <div class="ctl"><input id="q" type="search" list="storelist" placeholder="매장명 검색" aria-label="매장명 검색" autocomplete="off"><datalist id="storelist"></datalist><select id="date" aria-label="날짜"></select></div>
 </div></header>
 <main class="wrap">
   <div class="tabs" id="tabs"></div>
@@ -145,7 +147,15 @@ async function init() {
   st.kw = h.kw;
   $('#date').innerHTML = IDX.dates.map(d => `<option>${d}</option>`).join('');
   $('#date').onchange = e => { st.date = e.target.value; load(); };
-  $('#store').onchange = e => { st.store = e.target.value; st.kw = ''; render(); };
+  const pick = () => {  // 매장명 검색: 정확히 같은 이름 → 이름에 들어 있는 매장 순
+    const q = $('#q').value.replace(/\s/g, '').toLowerCase(); if (!q) return;
+    const list = IDX.stores.filter(s => DAY && DAY.stores[s.key]);
+    const hit = list.find(s => s.name.replace(/\s/g, '').toLowerCase() === q) || list.find(s => s.name.replace(/\s/g, '').toLowerCase().includes(q));
+    if (hit) { st.store = hit.key; st.kw = ''; render(); $('#q').blur(); }
+    else alert('이 날짜에 그 매장의 기록이 없어요.');
+  };
+  $('#q').onchange = pick;
+  $('#q').onkeydown = e => { if (e.key === 'Enter') pick(); };
   load();
 }
 async function load() {
@@ -155,9 +165,9 @@ async function load() {
 }
 function render() {
   const stores = IDX.stores.filter(s => DAY && DAY.stores[s.key]);
-  $('#store').innerHTML = stores.map(s => `<option value="${esc(s.key)}">${esc(s.name)}</option>`).join('');
+  $('#storelist').innerHTML = stores.map(s => `<option value="${esc(s.name)}">`).join('');
   if (!stores.some(s => s.key === st.store)) st.store = (stores[0] || {}).key;
-  $('#store').value = st.store || '';
+  $('#q').value = (stores.find(s => s.key === st.store) || {}).name || '';
   const sd = DAY && DAY.stores[st.store];
   if (!sd) { $('#tabs').innerHTML = ''; $('#view').innerHTML = '<div class="card empty">이 날짜에는 기록이 없어요.</div>'; return; }
   const kws = Object.keys(sd.keywords);
