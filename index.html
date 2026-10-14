@@ -1,0 +1,309 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex">
+<title>플레이스 매일 분석</title>
+<style>
+:root{
+  --bg:#F2F4F6;--card:#FFFFFF;--line:#E5E8EB;--ink:#191F28;--sub:#333D4B;--muted:#6B7684;--faint:#B0B8C1;--field:#F2F4F6;
+  --green:#03C75A;--green-d:#0A7F41;--green-soft:#E6F8EE;--red:#F04452;--red-d:#D22030;--red-soft:#FFEEEF;
+  --amber:#E58A00;--amber-d:#A35F00;--amber-soft:#FFF4E0;--bar:#C9D1DA;--mine-bg:#F0FAF4;--mine-pink:#FFF0F2;--mine-green:#E9F8EF;
+}
+*{box-sizing:border-box}
+html,body{margin:0;background:var(--bg);color:var(--ink);font-family:"Malgun Gothic","맑은 고딕","Apple SD Gothic Neo",system-ui,sans-serif;-webkit-text-size-adjust:100%}
+body{padding-bottom:40px}
+.wrap{max-width:1180px;margin:0 auto;padding:0 16px}
+header.top{background:var(--card);border-bottom:1px solid var(--line);position:sticky;top:0;z-index:5}
+header.top .wrap{display:flex;align-items:center;gap:12px;padding-top:12px;padding-bottom:12px;flex-wrap:wrap}
+.logo{width:36px;height:36px;border-radius:10px;background:var(--green);color:#fff;font-weight:700;display:flex;align-items:center;justify-content:center;font-size:18px}
+.brand b{display:block;font-size:16px}.brand small{color:var(--muted);font-size:12px}
+.ctl{margin-left:auto;display:flex;gap:8px;flex-wrap:wrap}
+select{height:38px;border:1px solid var(--line);border-radius:10px;background:var(--card);padding:0 10px;font:inherit;font-size:14px;font-weight:700;color:var(--ink);max-width:100%}
+.tabs{display:flex;gap:8px;flex-wrap:wrap;margin:18px 0 6px}
+.tab{border:1px solid var(--line);background:var(--card);border-radius:12px;padding:10px 14px;font:inherit;font-weight:700;font-size:14px;color:var(--ink);cursor:pointer}
+.tab.on{background:var(--green);border-color:var(--green);color:#fff}
+.tab small{font-weight:700;opacity:.85}
+h1{font-size:24px;margin:18px 0 4px}
+.info{color:var(--muted);font-size:13px;line-height:1.5}
+.sec{display:flex;align-items:baseline;gap:12px;flex-wrap:wrap;margin:30px 0 12px}
+.sec h2{font-size:18px;margin:0}.sec span{color:var(--muted);font-size:13px}
+.card{background:var(--card);border:1px solid var(--line);border-radius:16px}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+@media (max-width:760px){.grid2{grid-template-columns:1fr}h1{font-size:20px}}
+/* 요약 */
+.hero{display:flex;gap:20px;padding:18px;align-items:center;flex-wrap:wrap}
+.rankbox{width:190px;min-height:150px;border-radius:14px;background:var(--green-soft);color:var(--green-d);display:flex;flex-direction:column;align-items:center;justify-content:center;flex:none}
+.rankbox.plain{background:var(--field);color:var(--muted)}
+.rankbox .l{font-size:13px;font-weight:700}.rankbox .big{font-size:42px;font-weight:800;line-height:1.25}.rankbox .s{font-size:12px}
+.hero .txt{flex:1;min-width:220px}.hero .txt b{font-size:24px;display:block}
+.hero .txt p{color:var(--muted);margin:6px 0 14px;font-size:14px}
+.pill{display:inline-block;border-radius:10px;padding:5px 12px;font-size:13px;font-weight:700;margin:0 6px 6px 0;background:var(--field);color:var(--sub)}
+.pill.good{background:var(--green-soft);color:var(--green-d)}.pill.bad{background:var(--red-soft);color:var(--red-d)}.pill.warn{background:var(--amber-soft);color:var(--amber-d)}
+/* 그래프 */
+.chart{padding:16px 20px}
+.chart .row{display:flex;align-items:center;gap:10px;flex-wrap:wrap;justify-content:space-between}
+.chart .sum{font-size:13px;color:var(--sub)}
+.seg{display:inline-flex;background:var(--field);border-radius:10px;padding:3px}
+.seg button{border:0;background:transparent;border-radius:8px;padding:6px 12px;font:inherit;font-weight:700;font-size:13px;color:var(--ink);cursor:pointer}
+.seg button.on{background:var(--green);color:#fff}
+svg text{font-family:inherit}
+/* 막대 */
+.mcard{padding:16px 22px 14px}
+.mcard .hd{display:flex;justify-content:space-between;align-items:center;margin-bottom:8px}
+.mcard .hd b{font-size:15px}
+.bar{display:grid;grid-template-columns:150px 1fr 70px;align-items:center;gap:10px;height:34px;padding:0 10px;border-radius:10px;font-size:14px}
+.bar .n{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;color:var(--sub)}
+.bar .v{text-align:right}
+.bar .t{height:12px;border-radius:6px;background:var(--field);overflow:hidden}
+.bar .t i{display:block;height:100%;border-radius:6px;background:var(--bar)}
+.bar.mine{font-weight:700}.bar.mine.good{background:var(--mine-green)}.bar.mine.bad{background:var(--mine-pink)}
+.bar.mine.good .t i{background:var(--green)}.bar.mine.bad .t i{background:var(--red)}
+.bar.mine.good .v{color:#16A34A}.bar.mine.bad .v{color:#E5484D}
+.bar.plain .t i{background:var(--green)}
+.avg{text-align:right;color:var(--muted);font-size:12px;margin-top:6px}
+@media (max-width:480px){.bar{grid-template-columns:110px 1fr 58px;font-size:13px}}
+/* 진단 */
+.dcard{padding:18px 22px}
+.dcard .hd{display:flex;align-items:center;gap:10px;margin-bottom:10px;font-weight:700;font-size:15px}
+.dot{width:30px;height:30px;border-radius:15px;color:#fff;display:flex;align-items:center;justify-content:center;font-weight:700}
+.tip{border-radius:10px;padding:11px 16px;margin:8px 0}
+.tip b{display:block;font-size:14px}.tip p{margin:3px 0 0;font-size:13px;color:var(--sub);line-height:1.5}
+.tip.w{background:var(--amber-soft)}.tip.w b,.tip.w em{color:var(--amber-d)}
+.tip.s{background:var(--green-soft)}.tip.s b,.tip.s em{color:var(--green-d)}
+.tip em{font-style:normal;font-weight:700}
+/* 표 */
+.tbl{overflow-x:auto;padding:12px 16px}
+table{border-collapse:collapse;width:100%;font-size:14px;min-width:560px}
+th{font-size:12px;color:var(--sub);font-weight:700;padding:10px 12px;white-space:pre-line;text-align:center;background:var(--field)}
+td{padding:10px 12px;border-top:1px solid var(--line)}
+td.r,th.r{text-align:right}td.c{text-align:center}
+tr:nth-child(even) td{background:#FAFBFC}
+.mc{background:var(--mine-bg)!important}
+th.mc{color:var(--green-d)}
+.good{color:var(--green-d)}.bad{color:var(--red-d)}.muted{color:var(--muted)}.b{font-weight:700}
+.on{color:var(--green-d);font-weight:700}.off{color:#C4CAD2;font-weight:700}
+tr.mine td{background:var(--mine-green)!important;font-weight:700}
+.diff{display:block;font-size:11px;font-weight:700}
+/* 매장 특징 */
+.fcard{padding:18px 22px}
+.fcard.mine{background:var(--mine-bg);border-color:#BFEBD2}
+.fcard .hd{display:flex;align-items:center;gap:10px}
+.lab{color:#fff;background:var(--sub);border-radius:6px;padding:2px 8px;font-size:12px;font-weight:700}
+.fcard.mine .lab{background:var(--green)}
+.fcard .nm{font-weight:700;font-size:15px}
+.fcard .meta{color:var(--muted);font-size:13px;margin-top:8px}
+.ptitle{display:inline-block;border:1.5px solid var(--faint);border-radius:14px;padding:3px 12px;font-size:13px;font-weight:700;color:var(--sub);margin:14px 0 6px;background:var(--card)}
+.fcard.mine .ptitle{border-color:var(--green);color:var(--green-d)}
+.fbar{display:grid;grid-template-columns:170px 1fr 56px;gap:10px;align-items:center;height:28px;font-size:13px}
+.fbar .t{height:8px;border-radius:4px;background:var(--field)}.fbar .t i{display:block;height:100%;border-radius:4px;background:var(--bar)}
+.fcard.mine .fbar .t i{background:var(--green)}
+.fbar .v{text-align:right}.fbar .n{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+@media (max-width:480px){.fbar{grid-template-columns:120px 1fr 48px}}
+.empty{padding:44px 24px;text-align:center;color:var(--muted)}
+.err{padding:30px;text-align:center;color:var(--red-d)}
+.foot{color:var(--faint);font-size:12px;margin-top:30px;text-align:center}
+</style>
+</head>
+<body>
+<header class="top"><div class="wrap">
+  <div class="logo">N</div>
+  <div class="brand"><b>플레이스 매일 분석</b><small id="updated"></small></div>
+  <div class="ctl"><select id="date" aria-label="날짜"></select><select id="store" aria-label="매장"></select></div>
+</div></header>
+<main class="wrap">
+  <div class="tabs" id="tabs"></div>
+  <div id="view"><div class="empty">불러오는 중...</div></div>
+  <div class="foot">네이버 지도 PC 검색 기준 · 광고 제외 · 매일 12시에 자동으로 기록돼요</div>
+</main>
+<script>
+const $ = s => document.querySelector(s);
+const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const RANGES = [['1주일', 7], ['1개월', 30], ['3개월', 90]];
+let IDX = null, HIST = {}, DAY = null, st = {date: '', store: '', kw: '', days: 7};
+const cache = {};
+
+async function getJSON(p) {
+  if (!cache[p]) cache[p] = fetch(p + '?v=' + (IDX ? encodeURIComponent(IDX.updated) : Date.now())).then(r => { if (!r.ok) throw new Error(r.status); return r.json(); });
+  return cache[p];
+}
+function readHash() {
+  const [d, s, k] = decodeURIComponent(location.hash.slice(1)).split('|');
+  return {date: d || '', store: s || '', kw: k || ''};
+}
+function writeHash() { history.replaceState(null, '', '#' + encodeURIComponent([st.date, st.store, st.kw].join('|'))); }
+
+async function init() {
+  try { IDX = await getJSON('data/index.json'); HIST = await getJSON('data/history.json'); }
+  catch (e) { $('#view').innerHTML = '<div class="card empty">아직 올라온 기록이 없어요.</div>'; return; }
+  $('#updated').textContent = `마지막 업데이트 ${IDX.updated}`;
+  if (!IDX.dates.length) { $('#view').innerHTML = '<div class="card empty">아직 기록이 없어요. 매일 12시 분석이 끝나면 여기에 나타나요.</div>'; return; }
+  const h = readHash();
+  st.date = IDX.dates.includes(h.date) ? h.date : IDX.dates[0];
+  st.store = IDX.stores.some(s => s.key === h.store) ? h.store : (IDX.stores[0] || {}).key;
+  st.kw = h.kw;
+  $('#date').innerHTML = IDX.dates.map(d => `<option>${d}</option>`).join('');
+  $('#date').onchange = e => { st.date = e.target.value; load(); };
+  $('#store').onchange = e => { st.store = e.target.value; st.kw = ''; render(); };
+  load();
+}
+async function load() {
+  $('#date').value = st.date;
+  try { DAY = await getJSON(`data/${st.date}.json`); } catch (e) { DAY = null; }
+  render();
+}
+function render() {
+  const stores = IDX.stores.filter(s => DAY && DAY.stores[s.key]);
+  $('#store').innerHTML = stores.map(s => `<option value="${esc(s.key)}">${esc(s.name)}</option>`).join('');
+  if (!stores.some(s => s.key === st.store)) st.store = (stores[0] || {}).key;
+  $('#store').value = st.store || '';
+  const sd = DAY && DAY.stores[st.store];
+  if (!sd) { $('#tabs').innerHTML = ''; $('#view').innerHTML = '<div class="card empty">이 날짜에는 기록이 없어요.</div>'; return; }
+  const kws = Object.keys(sd.keywords);
+  if (!kws.includes(st.kw)) st.kw = kws[0];
+  $('#tabs').innerHTML = kws.map(k => {
+    const x = sd.keywords[k];
+    let lab = !x.ok ? '실패' : x.my_rank ? `${x.my_rank}위` : '순위 밖';
+    const ch = x.ok && x.my_rank ? change(x.my_rank, x.prev_rank, x.has_prev)[0] : '';
+    if (ch && ch !== '-') lab += ' ' + ch;
+    return `<button class="tab ${k === st.kw ? 'on' : ''}" data-k="${esc(k)}">${esc(k)} <small>· ${lab}</small></button>`;
+  }).join('');
+  $('#tabs').querySelectorAll('.tab').forEach(b => b.onclick = () => { st.kw = b.dataset.k; render(); });
+  writeHash();
+  const x = sd.keywords[st.kw];
+  const status = {partial: ' · 일부 실패', running: ' · 분석 중'}[DAY.status] || '';
+  let html = `<h1>“${esc(st.kw)}” 분석 리포트</h1>`;
+  if (!x.ok || !x.report) {
+    html += `<div class="info">${esc(sd.name)} · ${st.date}${status}</div><div class="card err"><b>이 키워드는 ${st.date} 분석에 실패했어요.</b><br><span class="muted">${esc(x.error)}</span></div>`;
+    $('#view').innerHTML = html; return;
+  }
+  const r = x.report;
+  html += `<div class="info">${esc(sd.name)} · ${esc(r.time)} 조회 · 전체 ${r.total.toLocaleString()}개 매장 중 상위 ${r.summary.n}곳 · 광고 제외 · 내 매장 위치 기준${status}</div>`;
+  html += secSummary(r) + secChart() + secMetrics(r) + (r.summary.has_mine ? secDiag(r) : '') + secChecks(r) + secFeatures(r) + secTable(r) + secChanges(x);
+  $('#view').innerHTML = html;
+  bindChart();
+}
+function change(rank, prev, has) {
+  if (!has) return ['', 'muted'];
+  if (rank && !prev) return ['NEW', 'good'];
+  if (prev && !rank) return ['밖으로', 'bad'];
+  if (!rank) return ['', 'muted'];
+  const d = prev - rank;
+  return d > 0 ? [`▲${d}`, 'good'] : d < 0 ? [`▼${-d}`, 'bad'] : ['-', 'muted'];
+}
+const sec = (t, d) => `<div class="sec"><h2>${t}</h2><span>${d}</span></div>`;
+
+function secSummary(r) {
+  const s = r.summary;
+  if (!s.has_mine) return `<div class="card hero" style="margin-top:16px"><div class="rankbox plain"><div class="l">비교 매장</div><div class="big">${s.n}곳</div></div><div class="txt"><b>상위 ${s.n}곳을 비교했어요</b></div></div>`;
+  return `<div class="card hero" style="margin-top:16px">
+    <div class="rankbox"><div class="l">내 매장 순위</div><div class="big">${s.rank ? s.rank + '위' : '순위 밖'}</div><div class="s">${s.searched}위까지 확인</div></div>
+    <div class="txt"><b>${esc(s.head)}</b><p>${esc(s.name)} · “${esc(s.keyword)}” 검색 상위 ${s.n}곳과 비교</p>
+      <span class="pill ${s.weak ? 'warn' : ''}">보완할 점 ${s.weak}개</span><span class="pill ${s.strong ? 'good' : ''}">강점 ${s.strong}개</span>${s.rep_price ? `<span class="pill">대표 가격 ${esc(s.rep_price)}</span>` : ''}
+    </div></div>`;
+}
+
+/* ---- 순위 변화 그래프 ---- */
+function rankHist(days) {
+  const rows = ((HIST[st.store] || {})[st.kw] || []);
+  const by = Object.fromEntries(rows.map(r => [r[0], r]));
+  const end = new Date(st.date + 'T00:00:00'), out = [];
+  for (let i = days - 1; i >= 0; i--) {
+    const d = new Date(end); d.setDate(d.getDate() - i);
+    const k = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+    const r = by[k]; out.push([k, r ? r[1] : null, r ? r[2] : null]);
+  }
+  return out;
+}
+function secChart() {
+  return sec('순위 변화', `${st.date}까지 · 위로 갈수록 높은 순위`) +
+    `<div class="card chart"><div class="row"><div class="sum" id="csum"></div><div class="seg" id="cseg">${RANGES.map(([l, d]) => `<button data-d="${d}" class="${d === st.days ? 'on' : ''}">${l}</button>`).join('')}</div></div><div id="csvg"></div></div>`;
+}
+function bindChart() {
+  const seg = $('#cseg'); if (!seg) return;
+  seg.querySelectorAll('button').forEach(b => b.onclick = () => { st.days = +b.dataset.d; seg.querySelectorAll('button').forEach(x => x.classList.toggle('on', x === b)); drawChart(); });
+  drawChart();
+  window.onresize = () => { clearTimeout(window._rt); window._rt = setTimeout(drawChart, 150); };
+}
+function drawChart() {
+  const box = $('#csvg'); if (!box) return;
+  const h = rankHist(st.days), n = h.length;
+  const ranks = h.filter(x => x[1] === 'rank').map(x => x[2]);
+  const days = h.filter(x => x[1]).length;
+  if (ranks.length) {
+    const first = h.find(x => x[1] === 'rank')[2], last = [...h].reverse().find(x => x[1] === 'rank')[2], d = first - last;
+    $('#csum').textContent = `기록 ${days}일 · 가장 높은 순위 ${Math.min(...ranks)}위 · 가장 낮은 순위 ${Math.max(...ranks)}위 · 처음 ${first}위 → 마지막 ${last}위 (${d > 0 ? '▲' + d : d < 0 ? '▼' + (-d) : '변동 없음'})`;
+  } else $('#csum').textContent = days ? `기록 ${days}일 · 이 기간에 순위 안에 든 날이 없어요` : '이 기간에 기록이 없어요';
+  const W = Math.max(300, box.clientWidth), H = 260, L = 50, R = 20, T = 18, B = 34, OB = 26;
+  const lo = 1, hi = Math.floor(Math.max(10, ...ranks) * 1.1) + 1, pb = H - B - OB;
+  const y = r => T + (r - lo) / Math.max(1, hi - lo) * (pb - T);
+  const x = i => n > 1 ? L + i / (n - 1) * (W - L - R) : (L + W - R) / 2;
+  const step = [1, 2, 5, 10, 20, 25, 50].find(s => (hi - lo) / s <= 6) || 50;
+  let s = `<svg width="${W}" height="${H}" viewBox="0 0 ${W} ${H}">`;
+  const ticks = [...new Set([1, ...Array.from({length: Math.floor(hi / step)}, (_, i) => (i + 1) * step)])].filter(t => t <= hi);
+  for (const t of ticks) s += `<line x1="${L}" x2="${W - R}" y1="${y(t)}" y2="${y(t)}" stroke="#E5E8EB"/><text x="${L - 8}" y="${y(t) + 4}" text-anchor="end" font-size="11" fill="#6B7684">${t}위</text>`;
+  const yo = pb + OB / 2 + 4;
+  s += `<text x="${L - 8}" y="${yo + 4}" text-anchor="end" font-size="11" fill="#B0B8C1">순위 밖</text>`;
+  const every = Math.max(1, Math.round(n / Math.max(1, (W - L - R) / 64)));
+  h.forEach((p, i) => { if ((i % every === 0 && n - 1 - i >= every * 0.6) || i === n - 1) s += `<text x="${x(i)}" y="${H - 10}" text-anchor="middle" font-size="11" fill="#6B7684">${p[0].slice(5).replace('-', '/')}</text>`; });
+  let seg = [];
+  const flush = () => { if (seg.length > 1) s += `<polyline fill="none" stroke="#03C75A" stroke-width="2.5" points="${seg.join(' ')}"/>`; seg = []; };
+  h.forEach((p, i) => { if (p[1] === 'rank') seg.push(`${x(i)},${y(p[2])}`); else flush(); });
+  flush();
+  const lastI = h.map(p => p[1]).lastIndexOf('rank');
+  let bestI = -1; h.forEach((p, i) => { if (p[1] === 'rank' && (bestI < 0 || p[2] < h[bestI][2])) bestI = i; });
+  const rad = n <= 31 ? 4.5 : 2.5;
+  h.forEach((p, i) => {
+    if (p[1] === 'rank') {
+      const last = i === lastI;
+      if (n <= 31 || last) s += `<circle cx="${x(i)}" cy="${y(p[2])}" r="${rad}" fill="${last ? '#0A7F41' : '#fff'}" stroke="#0A7F41" stroke-width="2"/>`;
+      if (n <= 10 || last || (i === bestI && Math.abs(x(i) - x(lastI)) > 40)) s += `<text x="${x(i)}" y="${y(p[2]) - 10}" text-anchor="middle" font-size="12" font-weight="700" fill="${last ? '#0A7F41' : '#333D4B'}">${p[2]}위</text>`;
+    } else if (p[1]) s += `<circle cx="${x(i)}" cy="${yo}" r="${rad}" fill="#fff" stroke="${p[1] === 'out' ? '#B0B8C1' : '#D22030'}" stroke-width="2"/>`;
+  });
+  box.innerHTML = s + '</svg>';
+}
+
+function secMetrics(r) {
+  return sec('핵심 지표 비교', '막대가 길수록 많아요 · 내 매장은 평균 이상 초록, 미만 빨강') + '<div class="grid2">' +
+    r.metrics.map(m => `<div class="card mcard"><div class="hd"><b>${esc(m.title)}</b>${m.pct == null ? '' : `<span class="pill ${m.pct >= 0 ? 'good' : 'bad'}" style="margin:0">평균 대비 ${m.pct >= 0 ? '▲' : '▼'} ${Math.abs(m.pct).toFixed(0)}%</span>`}</div>` +
+      m.rows.map(b => `<div class="bar ${b.mine ? 'mine ' + b.kind : b.kind}"><span class="n">${esc(b.label)}</span><span class="t"><i style="width:${(b.ratio * 100).toFixed(1)}%"></i></span><span class="v">${esc(b.value)}</span></div>`).join('') +
+      (m.avg != null ? `<div class="avg">상위 평균 ${m.avg}</div>` : '') + '</div>').join('') + '</div>';
+}
+function secDiag(r) {
+  const em = t => esc(t).replace(/\d[\d,]*(?:\.\d+)?%/g, m => `<em>${m}</em>`);
+  const col = (title, items, good) => `<div class="card dcard"><div class="hd"><span class="dot" style="background:${good ? 'var(--green)' : 'var(--amber)'}">${good ? '✓' : '!'}</span>${title}  ${items.length}</div>` +
+    (items.length ? items.map(t => `<div class="tip ${good ? 's' : 'w'}"><b>${esc(t.head)}</b><p>${em(t.text)}</p></div>`).join('') : '<div class="muted">눈에 띄게 차이 나는 항목이 없어요.</div>') + '</div>';
+  return sec('내 매장 진단', '상위 평균과 차이가 큰 항목만 골랐어요') + `<div class="grid2">${col('보완할 점', r.weak, false)}${col('강점', r.strong, true)}</div>`;
+}
+function secChecks(r) {
+  const c = r.checks;
+  return sec('운영 현황', '손님이 플레이스에서 바로 쓸 수 있는 기능') + `<div class="card tbl"><table><tr><th></th>${c.stores.map(s => `<th class="${s.mine ? 'mc' : ''}">${esc(s.lab)}\n${esc(s.name)}</th>`).join('')}</tr>` +
+    c.rows.map(row => `<tr><td>${esc(row.title)}</td>${row.cells.map((x, i) => `<td class="c ${x.on ? 'on' : 'off'} ${c.stores[i].mine ? 'mc' : ''}">${esc(x.text)}</td>`).join('')}</tr>`).join('') + '</table></div>';
+}
+function secFeatures(r) {
+  return sec('매장별 특징', '손님 리뷰 키워드 TOP 5와 인기 스타일 전체') + '<div class="grid2">' +
+    r.features.map(f => `<div class="card fcard ${f.mine ? 'mine' : ''}"><div class="hd"><span class="lab">${esc(f.lab)}</span><span class="nm">${esc(f.name)}</span></div>` +
+      (f.meta ? `<div class="meta">${esc(f.meta)}</div>` : '') +
+      f.sections.map(sc => { const top = sc.items[0][1] || 1; return `<div class="ptitle">${esc(sc.title)}</div>` + sc.items.map(([n, v]) => `<div class="fbar"><span class="n">${esc(n)}</span><span class="t"><i style="width:${(v / top * 100).toFixed(1)}%"></i></span><span class="v">${v.toLocaleString()}</span></div>`).join(''); }).join('') +
+      '</div>').join('') + '</div>';
+}
+function secTable(r) {
+  const t = r.table, mc = t.mine_col;
+  return sec('전체 수치표', '값이 있는 항목만 표시해요') + `<div class="card tbl"><table><tr>${t.head.map((h, i) => `<th class="${i ? 'r' : ''} ${i === mc ? 'mc' : ''}">${esc(h)}</th>`).join('')}</tr>` +
+    t.rows.map(row => `<tr>${row.map((c, i) => `<td class="${i ? 'r' : ''} ${c.c || ''} ${c.b ? 'b' : ''} ${i === mc ? 'mc' : ''}">${esc(c.t)}</td>`).join('')}</tr>`).join('') + '</table></div>';
+}
+function secChanges(x) {
+  const cols = [['visitor_reviews', '방문자 리뷰'], ['blog_reviews', '블로그 리뷰'], ['photo_reviews', '사진 리뷰'], ['styles', '스타일'], ['style_picks', '인기스타일'], ['designers', '디자이너'], ['photos_total', '전체 사진']];
+  const num = v => typeof v === 'number' ? v.toLocaleString() : '-';
+  return sec('전 기록 대비 변화', DAY.prev_date ? `${DAY.prev_date} 기록과 비교 · 순위 ▲▼ · 수치 아래 +/- 는 늘어난 개수` : '첫 기록이라 비교할 이전 기록이 없어요') +
+    `<div class="card tbl"><table><tr><th>순위</th><th>변화</th><th style="text-align:left">매장</th>${cols.map(c => `<th class="r">${c[1]}</th>`).join('')}</tr>` +
+    x.changes.map(r => { const [ch, cc] = change(r.rank, r.prev_rank, x.has_prev);
+      return `<tr class="${r.mine ? 'mine' : ''}"><td class="c b">${r.rank || '밖'}</td><td class="c b ${cc}">${ch}</td><td class="${r.mine ? 'good' : ''}">${r.mine ? '★ ' : ''}${esc(r.name)}</td>` +
+        cols.map(([k]) => { const d = r[k + '_diff']; return `<td class="r">${num(r[k])}${d ? `<span class="diff ${d > 0 ? 'good' : 'bad'}">${d > 0 ? '+' : ''}${d.toLocaleString()}</span>` : ''}</td>`; }).join('') + '</tr>'; }).join('') +
+    '</table></div>';
+}
+init();
+</script>
+</body>
+</html>
